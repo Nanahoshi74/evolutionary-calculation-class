@@ -1,22 +1,37 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-int ITEM_NUM, MAX_WEIGHT;//アイテムの個数と重さ
-vector<int> itemWeight, itemValue;
+long long ItemNum, MaxWeight;//アイテムの個数と重さ
+vector<long long> ItemWeight, ItemValue;
 
-int calculate_idealValue(void){
-    return 1;
+long long CalculateKnapsackIdealValue(void){
+    vector<vector<long long>> dp(ItemNum + 10,vector<long long>(MaxWeight + 10, 0));
+    for(int i = 0; i < ItemNum; i++){
+        for(int w = 0; w <= MaxWeight; w++){
+            if(w - ItemWeight[i] >= 0){
+                if(dp[i + 1][w] < dp[i][w - ItemWeight[i]] + ItemValue[i]){
+                    dp[i + 1][w] = dp[i][w - ItemWeight[i]] + ItemValue[i];
+                }
+            }
+            if(dp[i + 1][w] < dp[i][w]){
+                dp[i + 1][w] = dp[i][w];
+            }
+        }
+    }
+    
+    return dp[ItemNum][MaxWeight];
 }
 
 int main(){
 
-    cin >> ITEM_NUM >> MAX_WEIGHT;//アイテムの個数と重さの限界を入力
-    itemWeight.resize(ITEM_NUM), itemValue.resize(ITEM_NUM);
+    cin >> ItemNum >> MaxWeight;//アイテムの個数と重さの限界を入力
+    ItemWeight.resize(ItemNum), ItemValue.resize(ItemNum);
 
-    for(int i = 0; i < ITEM_NUM; i++){
-        cin >> itemWeight[i] >> itemValue[i];
+    for(int i = 0; i < ItemNum; i++){
+        cin >> ItemWeight[i] >> ItemValue[i];
     }
 
+    cout << CalculateKnapsackIdealValue() << endl;
 
     return 0;
 }
