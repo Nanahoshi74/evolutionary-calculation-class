@@ -4,6 +4,9 @@ using namespace std;
 long long item_num, max_weight;//アイテムの個数と重さ
 vector<long long> item_weight, item_value;
 int seed = 0;//乱数のシード
+int MAX_GEN = 10;//最大世代交代数
+int group_num = 10;//集団のサイズ
+vector<vector<int>> chrome;
 
 /*-------------------------------------------------------------------------------
    疑似乱数
@@ -23,9 +26,20 @@ int get_rand_range(int min_val, int max_val ) {
     初期データの設定
 ---------------------------------------------------------------------------------*/
 
-void 
+void initialize(){
+    item_weight.resize(item_num,0);
+    item_value.resize(item_num,0);
+    chrome.resize(group_num,vector<int>(item_num,0));
+    
+    //i番目の個体のj番目の染色体の設定、1だったらそのj番目の品物を選ぶ、0だったら選ばない というのをランダムに
+    for(int i = 0; i < group_num; i++){
+        for(int j = 0; j < item_num; j++){
+            chrome[i][j] = get_rand_range(0,1);
+        }
+    }
+}
 
-long long CalculateKnapsackIdealValue(void){
+long long caalculate_knapsack_ideal_Value(void){
     //動的計画法によりナップザック問題の最適解を求める関数
     vector<vector<long long>> dp(item_num + 10,vector<long long>(max_weight + 10, 0));
     for(int i = 0; i < item_num; i++){
@@ -46,18 +60,13 @@ long long CalculateKnapsackIdealValue(void){
 
 int main(){
 
-    cin >> item_num >> max_weight;//アイテムの個数と重さの限界を入力
-    item_weight.resize(item_num), item_value.resize(item_num);
+    cin >> item_num;
+    initialize();//初期設定
 
     for(int i = 0; i < item_num; i++){
         cin >> item_weight[i] >> item_value[i];
     }
 
-    const int MAX_GEN = 10;//世代交代数
-
     
-
-    
-
     return 0;
 }
