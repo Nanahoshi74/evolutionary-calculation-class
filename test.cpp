@@ -6,7 +6,7 @@ vector<long long> item_weight, item_value;
 int seed = 0;//乱数のシード
 int MAX_GEN = 10;//最大世代交代数
 int group_num = 10;//集団のサイズ
-vector<vector<int>> chrome;
+vector<vector<int>> chrome;//縦がgroup_num,横がitem_num のサイズになる
 
 /*-------------------------------------------------------------------------------
    疑似乱数
@@ -39,6 +39,33 @@ void initialize(){
     }
 }
 
+/*--------------------------------------------------------------------------------
+    データ表示用関数
+---------------------------------------------------------------------------------*/
+
+void print_chrome(){
+    vector<int> sum_weight(group_num), sum_value(group_num);
+    for(int i = 0; i < group_num; i++){
+        for(int j = 0; j < item_num; j++){
+            if(chrome[i][j] == 1){
+                sum_weight[i] += item_weight[j];
+                sum_value[i] += item_value[j];
+            }
+        }
+    }
+    cout << "総容量 : [";
+    for(int i = 0; i < group_num; i++){
+        cout << sum_weight[i] << ", ";
+    }
+    cout << "]" << endl;
+    cout << "総価値 : [";
+    for(int i = 0; i < group_num; i++){
+        cout << sum_value[i] << ", ";
+    }
+    cout << "]" << endl;
+}
+
+
 long long caalculate_knapsack_ideal_Value(void){
     //動的計画法によりナップザック問題の最適解を求める関数
     vector<vector<long long>> dp(item_num + 10,vector<long long>(max_weight + 10, 0));
@@ -67,6 +94,7 @@ int main(){
         cin >> item_weight[i] >> item_value[i];
     }
 
-    
+
+
     return 0;
 }
