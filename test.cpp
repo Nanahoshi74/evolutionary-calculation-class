@@ -67,7 +67,12 @@ void caluculate_evaluation(){
             }
         }
     }
+    cout << *max_element(value_sum.begin(), value_sum.end()) << endl;
 }
+
+/*----------------------------------------------------------------------------------------
+    ルーレット選択
+------------------------------------------------------------------------------------------*/
 
 void selection(){
     vector<int> ranked_index;//適応度の高いもののインデックスから降順になるような配列
@@ -91,16 +96,75 @@ void selection(){
     }
     for(int i = 0; i < group_num; i++){
         //次の世代の遺伝子集団を決めていく
-        int rondom_value = get_rand_range2(0, total_value);
+        int rondom_value = get_rand_range(0, total_value);
         int tmp_sum = 0;
         for(int j = 0; j < group_num; j++){
             tmp_sum += value_sum[j];
-            if(tmp_sum > rondom_value){
+            if(tmp_sum >= rondom_value){
                 for(int k = 0; k < item_num; k++){
                     next_chrome[i][k] = chrome[j][k];
                 }
                 //選ばれた個体が決まったのでbreakで次の個体決めへ
                 break;
+            }
+        }
+    }
+}
+
+/*----------------------------------------------------------------------------------
+    2点交叉
+------------------------------------------------------------------------------------*/
+
+void two_point_crossing(){
+    for(int i = 0; i < group_num-1; i += 2){
+        int crossing = get_rand_range(0,100);
+        if(crossing < 95){
+            int r1 = get_rand_range(0, item_num - 1);
+            int r2 = get_rand_range(r1, item_num-1);
+            vector<vector<int>> child(2, vector<int>(item_num));
+            
+            for(int j = 0; j < item_num; j++){
+                if(r1 <= j && j <= r2){
+                    child[0][j] = next_chrome[i+1][j];
+                    child[1][j] = next_chrome[i][j];
+                }
+                else{
+                    child[0][j] = next_chrome[i][j];
+                    child[1][j] = next_chrome[i+1][j];
+                }
+            }
+            for(int j = 0; j < item_num; j++){
+                next_chrome[i][j] = child[0][j];
+                next_chrome[i+1][j] = child[1][j];
+            }
+        }
+    }
+}
+
+/*--------------------------------------------------------------------------------
+    突然変異
+----------------------------------------------------------------------------------*/
+void mutation(){
+    for(int i = 0; i < group_num; i++){
+        int mutantrate = get_rand_range(0, 100);
+        if(mutantrate < 3){
+            int m = get_rand_range(0, item_num-1);
+            next_chrome[i][m] = (next_chrome[i][m] + 1) % 2;
+        }
+    }
+}
+
+/*-------------------------------------------------------------------------------
+   世代交代
+----------------------------------------------------------------------------------*/
+void change_generation(){
+    for(int i = 0; i < group_num; i++){
+        for(int j = 0; j < item_num; j++){
+            if(i == 0 || i == 1){
+                chrome[i][j] = elite[i][j];
+            }
+            else{
+                chrome[i][j] = next_chrome[i][j];
             }
         }
     }
@@ -160,8 +224,9 @@ int main(){
     for(int i = 0; i < item_num; i++){
         cin >> item_weight[i] >> item_value[i];
     }
-
-
+    for(int i = 0; i < MAX_GEN; i++){
+        
+    }
 
     return 0;
 }
