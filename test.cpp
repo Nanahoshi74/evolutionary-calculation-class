@@ -4,7 +4,7 @@ using namespace std;
 long long item_num, max_weight;//アイテムの個数と重さ
 vector<long long> item_weight, item_value;
 random_device seed_gen;
-long long seed = 3;
+long long seed = 10;
 bool use_seed = true;
 long long MAX_GEN = 1000;//最大世代交代数
 long long group_num = 10000;//集団のサイズ
@@ -13,6 +13,9 @@ vector<long long> value_sum, weight_sum;//価値と重りの合計を保存す�
 vector<vector<long long>> elite;
 vector<long long> sub_value_sum;
 long long generation = 1;
+
+//グラフ作成のためのcsv読み込み
+ofstream ofs("/home/nanahoshi74/evolutionary-calculation-class/case2.txtのcsv.csv");
 /*-------------------------------------------------------------------------------
    疑似乱数
 --------------------------------------------------------------------------------*/
@@ -194,7 +197,9 @@ void change_generation(){
 
 void print_chrome(){
     cout << "世代 : " << generation << endl;
-    cout << "最大値は : " << *max_element(value_sum.begin(), value_sum.end()) << endl;  
+    cout << "最大値は : " << *max_element(value_sum.begin(), value_sum.end()) << endl;
+    //csvファイルに出力する
+    ofs << generation << ',' << *max_element(value_sum.begin(), value_sum.end()) << endl;  
 }
 
 
@@ -226,7 +231,8 @@ int main(){
         cin >> item_weight[i] >> item_value[i];
     }
 
-    // cout << "理想の値は" << " " << caalculate_knapsack_ideal_Value() << endl;
+    cout << "理想の値は" << " " << caalculate_knapsack_ideal_Value() << " です" <<endl;
+    sleep(5);//理想の値を見るため5秒停止
     for(int i = 0; i < MAX_GEN; i++){
         caluculate_evaluation();
         selection();

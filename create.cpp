@@ -15,11 +15,12 @@ long long get_rand_range(long long min_val, long long max_val) {
 }
 
 int main(){
-    long long n = get_rand_range(1, 100);
-    long long w = get_rand_range(1, 1e5);
+    // long long n = get_rand_range(1, 100);
+    long long n = 100;
+    long long w = get_rand_range(1, 1e5) * 10;
     cout << n << " " << w << endl;
     for(int i = 0; i < n; i++){
-        long long W = get_rand_range(1, w);
+        long long W = get_rand_range(1, w) / 10;
         long long V = get_rand_range(1, 1e9);
         cout << W << " " << V << endl;
     }
