@@ -10,9 +10,10 @@ long long MAX_GEN = 1000;//最大世代交代数
 long long group_num = 10000;//集団のサイズ
 vector<vector<long long>> chrome, next_chrome;//縦がgroup_num,横がitem_num のサイズになる
 vector<long long> value_sum, weight_sum;//価値と重りの合計を保存する、初期化でgroup_numで初期化をする
-vector<vector<long long>> elite;
-vector<long long> sub_value_sum;
-long long generation = 1;
+vector<vector<long long>> elite;//エリート個体を保存するための変数
+long long generation = 1;//世代カウント用の変数
+bool is_Exist_Ideal_Value = false;//理想の値をもつ個体が全体の中で存在したかどうか
+long long first_appear_index = -1;
 
 //グラフ作成のためのcsv読み込み
 ofstream ofs1("/home/nanahoshi74/evolutionary-calculation-class/case2_二点交叉95%_突然変異率5%.csv");
@@ -51,19 +52,12 @@ void initialize(){
             chrome[i][j] = get_rand_range(0, 1);
         }
     }
-    // for(int i = 0; i < group_num; i++){
-    //     for(int j = 0; j < item_num; j++){
-    //         cout << chrome[i][j];
-    //     }
-    //     cout << endl;
-    // }
-    // exit(0);
 }
 
 void caluculate_evaluation(){
     weight_sum.assign(group_num, 0);
     value_sum.assign(group_num, 0);
-    sub_value_sum.assign(group_num, 0);
+
     for(int i = 0; i < group_num; i++){
         for(int j = 0; j < item_num; j++){
             if(chrome[i][j] == 1){
@@ -75,7 +69,6 @@ void caluculate_evaluation(){
             }
         }
     }
-    // cout << *max_element(value_sum.begin(), value_sum.end()) << endl;
 }
 
 /*----------------------------------------------------------------------------------------
@@ -174,7 +167,7 @@ void binomial_crossover(){
             vector<vector<long long>> child(2, vector<long long>(item_num));
             vector<long long> mask(item_num);
             for(int j = 0; j < item_num; j++){
-                int p = get_rand_range(0, 100);
+                int p = get_rand_range(0, 99);
                 if(p <= 55){
                     mask[j] = 1;
                 }
@@ -233,11 +226,27 @@ void change_generation(){
     データ表示用関数
 ---------------------------------------------------------------------------------*/
 
-void print_chrome(){
+void print_chrome(long long ideal_value){
     cout << "世代 : " << generation << endl;
-    cout << "最大値は : " << *max_element(value_sum.begin(), value_sum.end()) << endl;
+    long long max_value = *max_element(value_sum.begin(), value_sum.end());//その世代の価値の最大値
+    if(max_value == ideal_value){
+        is_Exist_Ideal_Value = true;
+        if(first_appear_index == -1){
+            first_appear_index = generation;
+        }
+    }
+
+    long long tmp_sum = 0;
+    for(int i = 0; i < group_num; i++){
+        tmp_sum += value_sum[i];
+    }
+    long long average_value = tmp_sum / group_num;//その世代の価値の平均値
+    cout << "価値の最大値は : " << max_value << " | ";
+    cout << " 価値の平均値は : " << average_value << endl;
+
     //csvファイルに出力する
-    ofs1 << generation << ',' << *max_element(value_sum.begin(), value_sum.end()) << endl;  
+    ofs1 << generation << ',' << max_value;
+    ofs1 << ',' << generation << ',' << average_value << endl;
 }
 
 
@@ -262,27 +271,36 @@ long long caalculate_knapsack_ideal_Value(void){
 
 int main(){
 
-    cin >> item_num >> max_weight;
+    cin >> item_num >> max_weight;//アイテムの個数と詰め込める最大の重さを入力
     initialize();//初期設定
 
     for(int i = 0; i < item_num; i++){
-        cin >> item_weight[i] >> item_value[i];
+        cin >> item_weight[i] >> item_value[i];//アイテムそれぞれの重さと価値を入力
     }
 
-    cout << "理想の値は" << " " << caalculate_knapsack_ideal_Value() << " です" <<endl;
+    long long ideal_value = caalculate_knapsack_ideal_Value();
+
+    cout << "理想の値は" << " " << ideal_value << " です" <<endl;
     sleep(5);//理想の値を見るため5秒停止
+
     for(int i = 0; i < MAX_GEN; i++){
-        caluculate_evaluation();
-        selection();
-        // two_point_crossing();
-        binomial_crossover();
-        mutation();
-        change_generation();
-        print_chrome();
+        caluculate_evaluation();//適応度計算
+        selection();//選択
+        two_point_crossing();//二点交叉
+        // binomial_crossover();//一様交叉
+        mutation();//突然変異
+        change_generation();//世代交代
+        print_chrome(ideal_value);//データ表示用の関数
         generation++;
     }
 
     cout << "理想の値は" << " " << caalculate_knapsack_ideal_Value() << endl;
+    if(is_Exist_Ideal_Value){
+        cout << "理想の値を初めて持った個体は " << first_appear_index << " 世代に存在しました"<< endl;
+    }
+    else{
+        cout << "理想の値を持つ個体が存在しませんでした" << endl;
+    }
 
     return 0;
 }

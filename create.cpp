@@ -21,7 +21,7 @@ int main(){
     cout << n << " " << w << endl;
     for(int i = 0; i < n; i++){
         long long W = get_rand_range(1, w) / 10;
-        long long V = get_rand_range(1, 1e9);
+        long long V = get_rand_range(1, 1e6);
         cout << W << " " << V << endl;
     }
 
