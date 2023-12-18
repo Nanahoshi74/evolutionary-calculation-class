@@ -4,8 +4,8 @@ using namespace std;
 long long item_num, max_weight;//アイテムの個数と重さ
 vector<long long> item_weight, item_value;
 random_device seed_gen;
-long long seed = 10;
-bool use_seed = true;
+long long seed = 10;//シードの値
+bool use_seed = true;//シードを使うかどうか
 long long MAX_GEN = 1000;//最大世代交代数
 long long group_num = 10000;//集団のサイズ
 vector<vector<long long>> chrome, next_chrome;//縦がgroup_num,横がitem_num のサイズになる
@@ -139,7 +139,7 @@ void selection(){
 void two_point_crossing(){
     for(int i = 0; i < group_num-1; i += 2){
         long long crossing = get_rand_range(0,100);
-        if(crossing < 60){
+        if(crossing <= 95){
             long long r1 = get_rand_range(0, item_num - 1);
             long long r2 = get_rand_range(r1, item_num-1);
             vector<vector<long long>> child(2, vector<long long>(item_num));
@@ -162,13 +162,50 @@ void two_point_crossing(){
     }
 }
 
+/*-------------------------------------------------------------------------------
+    一様交叉
+---------------------------------------------------------------------------------*/
+
+void binomial_crossover(){
+    for(int i = 0; i < group_num-1; i += 2){
+        long long crossing = get_rand_range(0, 100);
+        if(crossing > 95){
+            vector<vector<long long>> child(2, vector<long long>(item_num));
+            vector<long long> mask(item_num);
+            for(int j = 0; j < item_num; j++){
+                int p = get_rand_range(0, 100);
+                if(p <= 55){
+                    mask[j] = 1;
+                }
+                else{
+                    mask[j] = 0;
+                }
+            }
+            for(int j = 0; j < item_num; j++){
+                if(mask[j] == 1){
+                    child[0][j] = next_chrome[i][j];
+                    child[1][j] = next_chrome[i+1][j];
+                }
+                else{
+                    child[1][j] = next_chrome[i+1][j];
+                    child[0][j] = next_chrome[i][j];
+                }
+            }
+            for(int j = 0; j < item_num; j++){
+                next_chrome[i][j] = child[0][j];
+                next_chrome[i+1][j] = child[1][j];
+            }
+        }
+    }
+}
+
 /*--------------------------------------------------------------------------------
     突然変異
 ----------------------------------------------------------------------------------*/
 void mutation(){
     for(int i = 0; i < group_num; i++){
         long long mutantrate = get_rand_range(0, 100);
-        if(mutantrate < 20){
+        if(mutantrate < 10){
             long long m = get_rand_range(0, item_num-1);
             next_chrome[i][m] = (next_chrome[i][m] + 1) % 2;
         }
@@ -236,7 +273,8 @@ int main(){
     for(int i = 0; i < MAX_GEN; i++){
         caluculate_evaluation();
         selection();
-        two_point_crossing();
+        // two_point_crossing();
+        binomial_crossover();
         mutation();
         change_generation();
         print_chrome();
