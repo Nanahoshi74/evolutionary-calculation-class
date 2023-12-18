@@ -3,36 +3,29 @@ using namespace std;
 
 long long item_num, max_weight;//アイテムの個数と重さ
 vector<long long> item_weight, item_value;
-int seed = 0;//乱数のシード
-int MAX_GEN = 10;//最大世代交代数
-int group_num = 10;//集団のサイズ
-vector<vector<int>> chrome, next_chrome;//縦がgroup_num,横がitem_num のサイズになる
-vector<int> value_sum, weight_sum;//価値と重りの合計を保存する、初期化でgroup_numで初期化をする
-vector<vector<int>> elite;
-
+random_device seed_gen;
+long long seed = 3;
+bool use_seed = false;
+long long MAX_GEN = 1000;//最大世代交代数
+long long group_num = 10000;//集団のサイズ
+vector<vector<long long>> chrome, next_chrome;//縦がgroup_num,横がitem_num のサイズになる
+vector<long long> value_sum, weight_sum;//価値と重りの合計を保存する、初期化でgroup_numで初期化をする
+vector<vector<long long>> elite;
+long long generation = 1;
 /*-------------------------------------------------------------------------------
    疑似乱数
 --------------------------------------------------------------------------------*/
-int get_rand_range(int min_val, int max_val) {
+long long get_rand_range(long long min_val, long long max_val) {
     // 乱数生成器
-    static mt19937 mt(seed);
+    static mt19937_64 mt(seed_gen());
+    static mt19937_64 mt2(seed);
 
     // [min_val, max_val] の一様分布整数 (int) の分布生成器
-    uniform_int_distribution<int> get_rand_uni_int( min_val, max_val );
+    uniform_int_distribution<long long> get_rand_uni_int( min_val, max_val );
 
     // 乱数を生成
-    return get_rand_uni_int(mt);
-}
-
-int get_rand_range2(int min_val, int max_val) {
-    // 乱数生成器
-    static mt19937 mt;//シード指定なし
-
-    // [min_val, max_val] の一様分布整数 (int) の分布生成器
-    uniform_int_distribution<int> get_rand_uni_int( min_val, max_val );
-
-    // 乱数を生成
-    return get_rand_uni_int(mt);
+    if(!use_seed) return get_rand_uni_int(mt);
+    else return get_rand_uni_int(mt2);
 }
 
 /*--------------------------------------------------------------------------------
@@ -42,8 +35,8 @@ int get_rand_range2(int min_val, int max_val) {
 void initialize(){
     item_weight.resize(item_num, 0);
     item_value.resize(item_num, 0);
-    chrome.resize(group_num, vector<int>(item_num,0)), elite.resize(2, vector<int>(item_num, 0));
-    next_chrome.resize(group_num, vector<int>(item_num));
+    chrome.resize(group_num, vector<long long>(item_num,0)), elite.resize(2, vector<long long>(item_num, 0));
+    next_chrome.resize(group_num, vector<long long>(item_num));
     value_sum.resize(group_num, 0);
     weight_sum.resize(group_num, 0);
     
@@ -53,9 +46,18 @@ void initialize(){
             chrome[i][j] = get_rand_range(0, 1);
         }
     }
+    // for(int i = 0; i < group_num; i++){
+    //     for(int j = 0; j < item_num; j++){
+    //         cout << chrome[i][j];
+    //     }
+    //     cout << endl;
+    // }
+    // exit(0);
 }
 
 void caluculate_evaluation(){
+    weight_sum.assign(group_num, 0);
+    value_sum.assign(group_num, 0);
     for(int i = 0; i < group_num; i++){
         for(int j = 0; j < item_num; j++){
             if(chrome[i][j] == 1){
@@ -67,7 +69,7 @@ void caluculate_evaluation(){
             }
         }
     }
-    cout << *max_element(value_sum.begin(), value_sum.end()) << endl;
+    // cout << *max_element(value_sum.begin(), value_sum.end()) << endl;
 }
 
 /*----------------------------------------------------------------------------------------
@@ -75,7 +77,7 @@ void caluculate_evaluation(){
 ------------------------------------------------------------------------------------------*/
 
 void selection(){
-    vector<int> ranked_index;//適応度の高いもののインデックスから降順になるような配列
+    vector<long long> ranked_index(group_num);//適応度の高いもののインデックスから降順になるような配列
     for(int i = 0; i < group_num; i++){
         ranked_index[i] = i;
     }
@@ -90,14 +92,14 @@ void selection(){
         }
     }
     //ルーレット選択
-    int total_value = 0;
+    long long total_value = 0;
     for(int i = 0; i < group_num; i++){
         total_value += value_sum[i];
     }
     for(int i = 0; i < group_num; i++){
         //次の世代の遺伝子集団を決めていく
-        int rondom_value = get_rand_range(0, total_value);
-        int tmp_sum = 0;
+        long long rondom_value = get_rand_range(0, total_value);
+        long long tmp_sum = 0;
         for(int j = 0; j < group_num; j++){
             tmp_sum += value_sum[j];
             if(tmp_sum >= rondom_value){
@@ -117,11 +119,11 @@ void selection(){
 
 void two_point_crossing(){
     for(int i = 0; i < group_num-1; i += 2){
-        int crossing = get_rand_range(0,100);
-        if(crossing < 95){
-            int r1 = get_rand_range(0, item_num - 1);
-            int r2 = get_rand_range(r1, item_num-1);
-            vector<vector<int>> child(2, vector<int>(item_num));
+        long long crossing = get_rand_range(0,100);
+        if(crossing < 60){
+            long long r1 = get_rand_range(0, item_num - 1);
+            long long r2 = get_rand_range(r1, item_num-1);
+            vector<vector<long long>> child(2, vector<long long>(item_num));
             
             for(int j = 0; j < item_num; j++){
                 if(r1 <= j && j <= r2){
@@ -146,9 +148,9 @@ void two_point_crossing(){
 ----------------------------------------------------------------------------------*/
 void mutation(){
     for(int i = 0; i < group_num; i++){
-        int mutantrate = get_rand_range(0, 100);
-        if(mutantrate < 3){
-            int m = get_rand_range(0, item_num-1);
+        long long mutantrate = get_rand_range(0, 100);
+        if(mutantrate < 20){
+            long long m = get_rand_range(0, item_num-1);
             next_chrome[i][m] = (next_chrome[i][m] + 1) % 2;
         }
     }
@@ -175,25 +177,8 @@ void change_generation(){
 ---------------------------------------------------------------------------------*/
 
 void print_chrome(){
-    vector<int> sum_weight(group_num), sum_value(group_num);
-    for(int i = 0; i < group_num; i++){
-        for(int j = 0; j < item_num; j++){
-            if(chrome[i][j] == 1){
-                sum_weight[i] += item_weight[j];
-                sum_value[i] += item_value[j];
-            }
-        }
-    }
-    cout << "総容量 : [";
-    for(int i = 0; i < group_num; i++){
-        cout << sum_weight[i] << ", ";
-    }
-    cout << "]" << endl;
-    cout << "総価値 : [";
-    for(int i = 0; i < group_num; i++){
-        cout << sum_value[i] << ", ";
-    }
-    cout << "]" << endl;
+    cout << "世代 : " << generation << endl;
+    cout << "最大値は : " << *max_element(value_sum.begin(), value_sum.end()) << endl;  
 }
 
 
@@ -218,15 +203,26 @@ long long caalculate_knapsack_ideal_Value(void){
 
 int main(){
 
-    cin >> item_num;
+    cin >> item_num >> max_weight;
     initialize();//初期設定
 
     for(int i = 0; i < item_num; i++){
         cin >> item_weight[i] >> item_value[i];
     }
+
+    // cout << "理想の値は" << " " << caalculate_knapsack_ideal_Value() << endl;
     for(int i = 0; i < MAX_GEN; i++){
-        
+        caluculate_evaluation();
+        selection();
+        two_point_crossing();
+        mutation();
+        change_generation();
+        print_chrome();
+        generation++;
     }
+
+    // cout << *max_element(value_sum.begin(), value_sum.end()) << endl;
+    cout << "理想の値は" << " " << caalculate_knapsack_ideal_Value() << endl;
 
     return 0;
 }
