@@ -5,12 +5,13 @@ long long item_num, max_weight;//アイテムの個数と重さ
 vector<long long> item_weight, item_value;
 random_device seed_gen;
 long long seed = 3;
-bool use_seed = false;
+bool use_seed = true;
 long long MAX_GEN = 1000;//最大世代交代数
 long long group_num = 10000;//集団のサイズ
 vector<vector<long long>> chrome, next_chrome;//縦がgroup_num,横がitem_num のサイズになる
 vector<long long> value_sum, weight_sum;//価値と重りの合計を保存する、初期化でgroup_numで初期化をする
 vector<vector<long long>> elite;
+vector<long long> sub_value_sum;
 long long generation = 1;
 /*-------------------------------------------------------------------------------
    疑似乱数
@@ -58,6 +59,7 @@ void initialize(){
 void caluculate_evaluation(){
     weight_sum.assign(group_num, 0);
     value_sum.assign(group_num, 0);
+    sub_value_sum.assign(group_num, 0);
     for(int i = 0; i < group_num; i++){
         for(int j = 0; j < item_num; j++){
             if(chrome[i][j] == 1){
@@ -81,10 +83,24 @@ void selection(){
     for(int i = 0; i < group_num; i++){
         ranked_index[i] = i;
     }
-
-    sort(ranked_index.begin(), ranked_index.end(), [&](int i, int j){
-        return value_sum[i] > value_sum[j];//適応度が高い個体のインデックス→低い個体のインデックスへソート
-    });
+    long long zero_cnt = 0;//重量オーバーした個数を数える変数
+    for(int i = 0; i < group_num; i++){
+        if(value_sum[i] == 0){
+            zero_cnt++;
+        }
+    }
+    //重量オーバーした個体の割合が95%を超えていたら重量が低いのを高い評価値とする
+    if(((double)zero_cnt / (double)group_num) >= 0.95){
+        sort(ranked_index.begin(), ranked_index.end(), [&](int i, int j){
+            return weight_sum[i] < weight_sum[j];
+        });
+    }
+    //そうでないなら価値が高い方を高い評価値とする
+    else{
+        sort(ranked_index.begin(), ranked_index.end(), [&](int i, int j){
+            return value_sum[i] > value_sum[j];//適応度が高い個体のインデックス→低い個体のインデックスへソート
+        });
+    }
 
     for(int i = 0; i < 2; i++){
         for(int j = 0; j < item_num; j++){
