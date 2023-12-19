@@ -10,7 +10,7 @@ const int MAX_GEN = 1000;//最大世代交代数
 const int group_num = 10000;//集団のサイズ
 const int crossing_persent = 95;//交叉率
 const int mutation_persent = 5;//突然変異率
-const int tournament_size = 1000;//トーナメント選択のトーナメントサイズ
+const int tournament_size = 500;//トーナメント選択のトーナメントサイズ
 vector<vector<int>> chrome, next_chrome;//縦がgroup_num,横がitem_num のサイズになる
 vector<long long> value_sum, weight_sum;//価値と重りの合計を保存する、初期化でgroup_numで初期化をする
 vector<vector<int>> elite;//エリート個体を保存するための変数
@@ -19,7 +19,7 @@ bool is_Exist_Ideal_Value = false;//理想の値をもつ個体が全体の中�
 int first_appear_index = -1;
 
 //グラフ作成のためのcsv読み込み
-ofstream ofs1("/home/nanahoshi74/evolutionary-calculation-class/case2_2点交叉_突然変異5%_トーナメント選択1000.csv");
+ofstream ofs1("/home/nanahoshi74/evolutionary-calculation-class/case2_2点交叉_突然変異5%_トーナメント選択500.csv");
 
 /*-------------------------------------------------------------------------------
    疑似乱数
@@ -296,7 +296,7 @@ void print_chrome(long long ideal_value){
     }
     long long average_value = tmp_sum / group_num;//その世代の価値の平均値
     cout << "価値の最大値は : " << max_value << " | ";
-    cout << " 価値の平均値は : " << average_value << endl;
+    cout << "価値の平均値は : " << average_value << endl;
 
     //csvファイルに出力する
     ofs1 << generation << ',' << max_value;
