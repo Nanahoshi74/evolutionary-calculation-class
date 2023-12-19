@@ -1,22 +1,25 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-long long item_num, max_weight;//アイテムの個数と重さ
+int item_num, max_weight;//アイテムの個数と重さ
 vector<long long> item_weight, item_value;
 random_device seed_gen;
-long long seed = 10;//シードの値
+const int seed = 10;//シードの値
 bool use_seed = true;//シードを使うかどうか
-long long MAX_GEN = 1000;//最大世代交代数
-long long group_num = 10000;//集団のサイズ
-vector<vector<long long>> chrome, next_chrome;//縦がgroup_num,横がitem_num のサイズになる
+const int MAX_GEN = 1000;//最大世代交代数
+const int group_num = 10000;//集団のサイズ
+const int crossing_persent = 95;//交叉率
+const int mutation_persent = 5;//突然変異率
+const int tournament_size = 1000;//トーナメント選択のトーナメントサイズ
+vector<vector<int>> chrome, next_chrome;//縦がgroup_num,横がitem_num のサイズになる
 vector<long long> value_sum, weight_sum;//価値と重りの合計を保存する、初期化でgroup_numで初期化をする
-vector<vector<long long>> elite;//エリート個体を保存するための変数
-long long generation = 1;//世代カウント用の変数
+vector<vector<int>> elite;//エリート個体を保存するための変数
+int generation = 1;//世代カウント用の変数
 bool is_Exist_Ideal_Value = false;//理想の値をもつ個体が全体の中で存在したかどうか
-long long first_appear_index = -1;
+int first_appear_index = -1;
 
 //グラフ作成のためのcsv読み込み
-ofstream ofs1("/home/nanahoshi74/evolutionary-calculation-class/case2_二点交叉95%_突然変異率5%.csv");
+ofstream ofs1("/home/nanahoshi74/evolutionary-calculation-class/case2_2点交叉_突然変異5%_トーナメント選択1000.csv");
 
 /*-------------------------------------------------------------------------------
    疑似乱数
@@ -41,8 +44,8 @@ long long get_rand_range(long long min_val, long long max_val) {
 void initialize(){
     item_weight.resize(item_num, 0);
     item_value.resize(item_num, 0);
-    chrome.resize(group_num, vector<long long>(item_num,0)), elite.resize(2, vector<long long>(item_num, 0));
-    next_chrome.resize(group_num, vector<long long>(item_num));
+    chrome.resize(group_num, vector<int>(item_num,0)), elite.resize(2, vector<int>(item_num, 0));
+    next_chrome.resize(group_num, vector<int>(item_num));
     value_sum.resize(group_num, 0);
     weight_sum.resize(group_num, 0);
     
@@ -75,12 +78,12 @@ void caluculate_evaluation(){
     ルーレット選択
 ------------------------------------------------------------------------------------------*/
 
-void selection(){
-    vector<long long> ranked_index(group_num);//適応度の高いもののインデックスから降順になるような配列
+void roulette_selection(){
+    vector<int> ranked_index(group_num);//適応度の高いもののインデックスから降順になるような配列
     for(int i = 0; i < group_num; i++){
         ranked_index[i] = i;
     }
-    long long zero_cnt = 0;//重量オーバーした個数を数える変数
+    int zero_cnt = 0;//重量オーバーした個数を数える変数
     for(int i = 0; i < group_num; i++){
         if(value_sum[i] == 0){
             zero_cnt++;
@@ -127,16 +130,67 @@ void selection(){
 }
 
 /*----------------------------------------------------------------------------------
+   トーナメント方式
+------------------------------------------------------------------------------------*/
+
+void tournament_selection(){
+    vector<int> ranked_index(group_num);//適応度の高いもののインデックスから降順になるような配列
+    for(int i = 0; i < group_num; i++){
+        ranked_index[i] = i;
+    }
+    int zero_cnt = 0;//重量オーバーした個数を数える変数
+    for(int i = 0; i < group_num; i++){
+        if(value_sum[i] == 0){
+            zero_cnt++;
+        }
+    }
+    //重量オーバーした個体の割合が95%を超えていたら重量が低いのを高い評価値とする
+    if(((double)zero_cnt / (double)group_num) >= 0.95){
+        sort(ranked_index.begin(), ranked_index.end(), [&](int i, int j){
+            return weight_sum[i] < weight_sum[j];
+        });
+    }
+    //そうでないなら価値が高い方を高い評価値とする
+    else{
+        sort(ranked_index.begin(), ranked_index.end(), [&](int i, int j){
+            return value_sum[i] > value_sum[j];//適応度が高い個体のインデックス→低い個体のインデックスへソート
+        });
+    }
+
+    for(int i = 0; i < 2; i++){
+        for(int j = 0; j < item_num; j++){
+            elite[i][j] = chrome[ranked_index[i]][j];//上位2個体の遺伝子配列をコピー
+        }
+    }
+    //トーナメント選択
+    for(int i = 0; i < group_num; i++){
+        int selected_index = 0;
+        long long selected_value = -1;
+        for(int j = 0; j < tournament_size; j++){
+            int tmp_index = get_rand_range(0, group_num-1);
+            long long tmp_value = value_sum[tmp_index];
+            if(tmp_value > selected_value){
+                selected_value = tmp_value;
+                selected_index = tmp_index;
+            }
+        }
+        for(int j = 0; j < item_num; j++){
+            next_chrome[i][j] = chrome[selected_index][j];
+        }
+    }
+}
+
+/*----------------------------------------------------------------------------------
     2点交叉
 ------------------------------------------------------------------------------------*/
 
 void two_point_crossing(){
     for(int i = 0; i < group_num-1; i += 2){
-        long long crossing = get_rand_range(0,100);
-        if(crossing < 95){
-            long long r1 = get_rand_range(0, item_num - 1);
-            long long r2 = get_rand_range(r1, item_num-1);
-            vector<vector<long long>> child(2, vector<long long>(item_num));
+        int crossing = get_rand_range(0,100);
+        if(crossing < crossing_persent){
+            int r1 = get_rand_range(0, item_num - 1);
+            int r2 = get_rand_range(r1, item_num-1);
+            vector<vector<int>> child(2, vector<int>(item_num));
             
             for(int j = 0; j < item_num; j++){
                 if(r1 <= j && j <= r2){
@@ -162,10 +216,10 @@ void two_point_crossing(){
 
 void binomial_crossover(){
     for(int i = 0; i < group_num-1; i += 2){
-        long long crossing = get_rand_range(0, 100);
-        if(crossing > 95){
-            vector<vector<long long>> child(2, vector<long long>(item_num));
-            vector<long long> mask(item_num);
+        int crossing = get_rand_range(0, 100);
+        if(crossing > crossing_persent){
+            vector<vector<int>> child(2, vector<int>(item_num));
+            vector<int> mask(item_num);
             for(int j = 0; j < item_num; j++){
                 int p = get_rand_range(0, 99);
                 if(p <= 55){
@@ -198,9 +252,9 @@ void binomial_crossover(){
 ----------------------------------------------------------------------------------*/
 void mutation(){
     for(int i = 0; i < group_num; i++){
-        long long mutantrate = get_rand_range(0, 100);
-        if(mutantrate < 5){
-            long long m = get_rand_range(0, item_num-1);
+        int mutantrate = get_rand_range(0, 100);
+        if(mutantrate < mutation_persent){
+            int m = get_rand_range(0, item_num-1);
             next_chrome[i][m] = (next_chrome[i][m] + 1) % 2;
         }
     }
@@ -283,9 +337,12 @@ int main(){
     cout << "理想の値は" << " " << ideal_value << " です" <<endl;
     sleep(5);//理想の値を見るため5秒停止
 
+    ofs1 << "世代" << ',' << "価値最大値" << ',' << "世代" << ',' << "価値平均" << endl;
+
     for(int i = 0; i < MAX_GEN; i++){
         caluculate_evaluation();//適応度計算
-        selection();//選択
+        // roulette_selection();//ルーレット選択
+        tournament_selection();//トーナメント選択
         two_point_crossing();//二点交叉
         // binomial_crossover();//一様交叉
         mutation();//突然変異
