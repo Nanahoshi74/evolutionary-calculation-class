@@ -15,7 +15,7 @@ vector<long long> sub_value_sum;
 long long generation = 1;
 
 //グラフ作成のためのcsv読み込み
-ofstream ofs1("/home/nanahoshi74/evolutionary-calculation-class/case2_二点交叉95%_突然変異率5%.csv");
+// ofstream ofs1("/home/nanahoshi74/evolutionary-calculation-class/case2_二点交叉95%_突然変異率5%.csv");
 
 /*-------------------------------------------------------------------------------
    疑似乱数
@@ -237,7 +237,7 @@ void print_chrome(){
     cout << "世代 : " << generation << endl;
     cout << "最大値は : " << *max_element(value_sum.begin(), value_sum.end()) << endl;
     //csvファイルに出力する
-    ofs1 << generation << ',' << *max_element(value_sum.begin(), value_sum.end()) << endl;  
+    // ofs1 << generation << ',' << *max_element(value_sum.begin(), value_sum.end()) << endl;  
 }
 
 

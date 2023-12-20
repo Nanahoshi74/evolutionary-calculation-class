@@ -9,17 +9,18 @@ bool use_seed = true;//シードを使うかどうか
 const int MAX_GEN = 1000;//最大世代交代数
 const int group_num = 10000;//集団のサイズ
 const int crossing_persent = 95;//交叉率
-const int mutation_persent = 5;//突然変異率
-const int tournament_size = 500;//トーナメント選択のトーナメントサイズ
+const int mutation_persent = 20;//突然変異率
+const int tournament_size = 10;//トーナメント選択のトーナメントサイズ
 vector<vector<int>> chrome, next_chrome;//縦がgroup_num,横がitem_num のサイズになる
 vector<long long> value_sum, weight_sum;//価値と重りの合計を保存する、初期化でgroup_numで初期化をする
 vector<vector<int>> elite;//エリート個体を保存するための変数
 int generation = 1;//世代カウント用の変数
 bool is_Exist_Ideal_Value = false;//理想の値をもつ個体が全体の中で存在したかどうか
+long long max_value = -1;//全世代の中の価値の最大値
 int first_appear_index = -1;
 
 //グラフ作成のためのcsv読み込み
-ofstream ofs1("/home/nanahoshi74/evolutionary-calculation-class/case2_2点交叉_突然変異5%_トーナメント選択500.csv");
+ofstream ofs1("/home/nanahoshi74/evolutionary-calculation-class/case2_一様交叉_突然変異20%_ルーレット選択.csv");
 
 /*-------------------------------------------------------------------------------
    疑似乱数
@@ -186,7 +187,7 @@ void tournament_selection(){
 
 void two_point_crossing(){
     for(int i = 0; i < group_num-1; i += 2){
-        int crossing = get_rand_range(0,100);
+        int crossing = get_rand_range(0, 100);
         if(crossing < crossing_persent){
             int r1 = get_rand_range(0, item_num - 1);
             int r2 = get_rand_range(r1, item_num-1);
@@ -217,12 +218,12 @@ void two_point_crossing(){
 void binomial_crossover(){
     for(int i = 0; i < group_num-1; i += 2){
         int crossing = get_rand_range(0, 100);
-        if(crossing > crossing_persent){
+        if(crossing < crossing_persent){
             vector<vector<int>> child(2, vector<int>(item_num));
             vector<int> mask(item_num);
             for(int j = 0; j < item_num; j++){
-                int p = get_rand_range(0, 99);
-                if(p <= 55){
+                int p = get_rand_range(0, 100);
+                if(p <= 50){
                     mask[j] = 1;
                 }
                 else{
@@ -282,7 +283,7 @@ void change_generation(){
 
 void print_chrome(long long ideal_value){
     cout << "世代 : " << generation << endl;
-    long long max_value = *max_element(value_sum.begin(), value_sum.end());//その世代の価値の最大値
+    max_value = *max_element(value_sum.begin(), value_sum.end());//その世代の価値の最大値
     if(max_value == ideal_value){
         is_Exist_Ideal_Value = true;
         if(first_appear_index == -1){
@@ -331,9 +332,7 @@ int main(){
     for(int i = 0; i < item_num; i++){
         cin >> item_weight[i] >> item_value[i];//アイテムそれぞれの重さと価値を入力
     }
-
     long long ideal_value = caalculate_knapsack_ideal_Value();
-
     cout << "理想の値は" << " " << ideal_value << " です" <<endl;
     sleep(5);//理想の値を見るため5秒停止
 
@@ -341,10 +340,10 @@ int main(){
 
     for(int i = 0; i < MAX_GEN; i++){
         caluculate_evaluation();//適応度計算
-        // roulette_selection();//ルーレット選択
-        tournament_selection();//トーナメント選択
-        two_point_crossing();//二点交叉
-        // binomial_crossover();//一様交叉
+        roulette_selection();//ルーレット選択
+        // tournament_selection();//トーナメント選択
+        // two_point_crossing();//二点交叉
+        binomial_crossover();//一様交叉
         mutation();//突然変異
         change_generation();//世代交代
         print_chrome(ideal_value);//データ表示用の関数
@@ -352,6 +351,7 @@ int main(){
     }
 
     cout << "理想の値は" << " " << caalculate_knapsack_ideal_Value() << endl;
+    cout << "得られた最大の値は : " << max_value << " でした" << endl;
     if(is_Exist_Ideal_Value){
         cout << "理想の値を初めて持った個体は " << first_appear_index << " 世代に存在しました"<< endl;
     }
